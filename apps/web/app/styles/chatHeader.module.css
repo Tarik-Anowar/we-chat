@@ -1,0 +1,68 @@
+.chatHeaderContainer {
+    display: flex;
+    max-width: 550px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px; /* Reduced padding */
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    border-radius: 20px;
+    margin: 5px;
+    margin-left: 0px;
+    max-height: 40px; /* Reduced max-height */
+    padding-left: 15px; /* Adjusted padding */
+    padding-right: 15px; /* Adjusted padding */
+}
+
+.searchBoxInput {
+    flex-grow: 1;
+    padding: 6px; /* Reduced padding */
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+}
+
+.icon {
+    font-size: 20px; 
+    color: #555;    
+    transition: color 0.3s ease; 
+}
+
+.icon:hover {
+    color: #007bff; 
+    cursor: pointer;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    padding: 6px; 
+    width: 100%; 
+    background: #bfbfbf;
+    box-shadow: 0px 2px 2px;
+}
+
+.userInfo {
+    display: flex;
+    flex-direction: column;
+    margin-left: 8px;
+    flex-grow: 1; 
+}
+
+.username {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.name {
+    font-size: 14px; 
+}
+
+.addButton {
+    margin-left: auto; 
+    color: #007bff;
+}
+
+.addButton:hover {
+    color: #023f80;
+}
