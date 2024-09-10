@@ -53,7 +53,6 @@ class SocketService {
             console.log("New socket connected: ", socket.id);
 
             socket.on('register', (userId) => {
-                // If userId is already registered, append the new socket ID to the list of socket IDs
                 if (this.users[userId]) {
                     this.users[userId].push(socket.id);
                 } else {
@@ -78,11 +77,9 @@ class SocketService {
             socket.on('disconnect', () => {
                 console.log('User disconnected:', socket.id);
 
-                // Find the user who owns this socket ID and remove it
                 for (const userId in this.users) {
                     this.users[userId] = this.users[userId].filter(id => id !== socket.id);
 
-                    // If no more sockets are associated with the user, delete the user
                     if (this.users[userId].length === 0) {
                         delete this.users[userId];
                     }
