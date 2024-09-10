@@ -1,0 +1,77 @@
+.container {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: 100%;
+    overflow: hidden;
+}
+
+.leftSide {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: row;
+    background-color: aqua;
+    height: 100%;
+}
+
+.header {
+    margin-bottom: 16px;
+}
+
+.chatList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+}
+
+.chatItem {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.chatItem:hover {
+    background-color: #f0f0f0;
+}
+
+.rightSide {
+    flex: 1;
+    height: 100%;
+    background-color: #fbf9f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease-in-out;
+}
+
+.rightSide.visible {
+    transform: translateX(0);
+}
+
+.showRightButton {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 1;
+}
+
+/* Media Query for Window Width Less Than 750px */
+@media (max-width: 750px) {
+    .leftSide {
+        flex: 0 0 100%; /* Make the left side take 100% width */
+        min-width: auto; /* Remove min-width restriction */
+    }
+
+    .rightSide {
+        flex: 1;
+    }
+}

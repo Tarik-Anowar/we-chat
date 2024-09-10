@@ -1,0 +1,12 @@
+.appBar {
+    background-color: #1976d2;
+}
+
+.chatHeader {
+    flex-grow: 1;
+    text-align: left; 
+}
+
+.menuIcon {
+    margin-left: auto; 
+}
