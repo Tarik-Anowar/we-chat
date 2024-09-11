@@ -7,14 +7,13 @@ if (!mongoUri) {
 }
 
 type ConnectionObject = {
-    isConnected?: number; 
+    isConnected?: number;
 };
 
 const connection: ConnectionObject = {};
 
 const connectToDatabase = async () => {
     if (connection.isConnected) {
-        console.log('Already connected to MongoDB');
         return;
     }
 

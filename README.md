@@ -1,4 +1,7 @@
 # we-chat
+
+chat securely 
+
 # Turborepo starter
 
 This is an official starter Turborepo.

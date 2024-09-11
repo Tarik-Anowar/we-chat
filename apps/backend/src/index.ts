@@ -9,7 +9,7 @@ const init = async (): Promise<void> => {
     socketService.io.attach(httpServer);
 
     httpServer.listen(PORT, () => {
-        console.log(`HTTP server is running on http://127.0.0.1:${PORT}`);
+        console.log(`HTTP server is running on http://localhost:${PORT}`);
     });
 
     socketService.initListeners();
