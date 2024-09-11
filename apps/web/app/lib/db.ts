@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 
-// const mongoUri = process.env.DATABASE_URL;
-const mongoUri = "mongodb://mongo:27017/app_data";
+const mongoUri = process.env.DATABASE_URL || "mongodb://mongo:27017/app_data";
 
 if (!mongoUri) {
     throw new Error('Please define the DATABASE_URL environment variable inside .env.local');
