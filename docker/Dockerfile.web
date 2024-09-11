@@ -1,0 +1,16 @@
+# Use the official Node.js image
+FROM node:20-alpine3.19
+
+WORKDIR /web/app
+
+COPY package.json package-lock.json turbo.json ./
+COPY apps/web/package.json apps/web/tsconfig.json ./apps/web/
+
+RUN npm install
+
+COPY apps/web ./apps/web
+COPY packages ./packages
+
+RUN npm run build --workspace=web
+
+CMD [ "npm", "run", "start-web-app"]
