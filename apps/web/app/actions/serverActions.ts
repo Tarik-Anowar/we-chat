@@ -218,7 +218,6 @@ export const sendMessage = async ({ chatId, content }: { chatId: string, content
         if (!session?.user?.id) {
             throw new Error('User is not authenticated');
         }
-        console.log("author = " + session?.user?.id)
         const newMessage = new Message({
             author: session.user.id,
             content: {
