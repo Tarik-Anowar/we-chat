@@ -14,7 +14,7 @@ jobs:
     - name: Check Out Repo
       uses: actions/checkout@v2
 
-    - name: Log in to Docker Hub
+    - name: Log in to Docker Hub with CREDENTIALS
       uses: docker/login-action@v2
       with:
         username: ${{secrets.DOCKER_USERNAME}}
