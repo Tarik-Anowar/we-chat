@@ -30,7 +30,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
     useEffect(() => {
         if (status === 'authenticated' && userId) {
-            const newSocket = io('http:// 192.168.1.10:8000', {  
+            const newSocket = io('http://192.168.1.10:8000', {  
                 query: { userId },
                 transports: ['websocket'],
             });
