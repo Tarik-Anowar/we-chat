@@ -204,7 +204,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
 
                 setMessageIds(prevIds => new Set(prevIds).add(newMessage._id)); 
 
-                socket?.emit('chat-message', { chatId, message: newMessage });
+                socket?.emit('send-message', { chatId, message: newMessage });
 
                 setMessage('');
             } catch (error) {
