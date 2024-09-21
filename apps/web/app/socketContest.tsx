@@ -22,6 +22,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     useEffect(() => {
         const fetchChatIds = async () => {
             if (status === 'authenticated') {
+              
                 try {
                     const getChatIds: string[] = await getAllChatIds();
                     setAllChatIds(getChatIds);
@@ -36,7 +37,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     useEffect(() => {
         if (status === 'authenticated' && session?.user?.id && allChatIds.length > 0) {
             const userId = session.user.id;
-            const newSocket = io('https://we-chat-web-zeta.vercel.app/', {
+            const newSocket = io('https://we-chat-5fk5.onrender.com', {
                 query: { userId },
                 transports: ['websocket'],
             });
