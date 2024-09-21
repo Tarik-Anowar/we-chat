@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Stack, Typography, styled } from '@mui/material';
+import { Stack, Typography, styled, Badge } from '@mui/material';
 import styles from '../styles/allChats.module.css';
 import UserAvatar from '../components/Avatar';
 import { useSession } from 'next-auth/react';
 import { getAllChats } from '../actions/serverActions';
+import { useSocket } from '../socketContest';
 
 enum MessageType {
   TEXT = "TEXT",
@@ -16,10 +17,10 @@ enum MessageType {
 
 interface Message {
   _id: string;
-  author:string;
+  author: string;
   content: {
-      type: MessageType;
-      value: string;
+    type: MessageType;
+    value: string;
   };
   createdAt: Date;
   updatedAt?: Date;
@@ -30,6 +31,7 @@ interface PChat {
   name: string;
   image?: string;
   lastMessage: Message;
+  unreadCount: number;
 }
 
 const ChatInfo = styled('div')({
@@ -61,27 +63,68 @@ interface AllChatsProps {
 }
 
 const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSelected }) => {
-  const { data: session,status } = useSession();
+  const { data: session, status } = useSession();
   const [chats, setChats] = useState<PChat[]>([]);
+  const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+  const socket = useSocket();
 
   const onChatClick = useCallback((chatId: string) => {
     setSingleChatSelected(chatId);
+    setUnreadMessages((prev) => ({ ...prev, [chatId]: 0 })); // Reset unread count on click
   }, [setSingleChatSelected]);
 
   const fetchAllChats = useCallback(async () => {
     try {
-      if (status==='authenticated') {
-        const fetchedChats:PChat[] = await getAllChats();
+      if (status === 'authenticated') {
+        const fetchedChats: PChat[] = await getAllChats();
         setChats(fetchedChats);
+
+        const initialUnreadMessages = fetchedChats.reduce((acc, chat) => {
+          acc[chat._id] = chat.unreadCount ?? 0;
+          return acc;
+        }, {} as Record<string, number>);
+
+        setUnreadMessages(initialUnreadMessages);
       }
     } catch (error) {
       console.error('Failed to fetch chats:', error);
     }
-  }, []);
+  }, [status]);
 
   useEffect(() => {
-    fetchAllChats(); 
-  }, [session?.user.id]); 
+    if (session?.user?.id) {
+      fetchAllChats();
+    }
+  }, [session?.user?.id, fetchAllChats]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessageNotification = ({ chatId, message, sender }: { chatId: string; message: Message; sender: string }) => {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === chatId ? { ...chat, lastMessage: message } : chat
+        )
+      );
+
+      if (sender !== socket.id) {
+        setUnreadMessages((prev) => ({
+          ...prev,
+          [chatId]: (prev[chatId] || 0) + 1,
+        }));
+      }
+    };
+
+    socket.on('message-notification', handleMessageNotification);
+
+    return () => {
+      socket.off('message-notification', handleMessageNotification);
+    };
+  }, [socket, session?.user?.id]);
+
+  const truncateMessage = (message: string) => (
+    message.length > 15 ? `${message.substring(0, 15)}...` : message
+  );
 
   return (
     <div className={styles.allChatsContainer}>
@@ -89,11 +132,18 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
         chats.map((chat: PChat) => (
           <div key={chat._id} onClick={() => onChatClick(chat._id)}>
             <SingleChat selected={singleChatSelected === chat._id}>
-              <UserAvatar userId={chat._id} name={chat.name} imageUrl={chat.image} size={30} />
+              <Badge
+                badgeContent={unreadMessages[chat._id] || 0}
+                color="secondary"
+                overlap="circular"
+                invisible={singleChatSelected === chat._id||unreadMessages[chat._id] === 0} 
+              >
+                <UserAvatar userId={chat._id} name={chat.name} imageUrl={chat.image} size={40} />
+              </Badge>
               <ChatInfo>
                 <strong>{chat.name}</strong>
                 <Typography variant="body2" color="textSecondary">
-                  {chat.lastMessage?.content?.value || 'No messages yet'}
+                  {chat.lastMessage?.content?.value ? truncateMessage(chat.lastMessage.content.value) : 'No messages yet'}
                 </Typography>
               </ChatInfo>
             </SingleChat>

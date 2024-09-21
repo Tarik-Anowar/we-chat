@@ -11,6 +11,7 @@ enum MessageType {
 
 interface IMessage extends Document {
     author: Types.ObjectId;
+    chatId: Types.ObjectId;
     content: {
         type: MessageType;
         value: string;
@@ -24,6 +25,11 @@ const messageSchema = new Schema<IMessage>({
         type: Schema.Types.ObjectId,
         ref: "User",
         required: true,
+    },
+    chatId:{
+        type:Schema.Types.ObjectId,
+        ref:"Chat",
+        require:true,
     },
     content: {
         type: {

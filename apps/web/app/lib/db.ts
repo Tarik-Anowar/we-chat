@@ -1,3 +1,4 @@
+'use server'
 import mongoose from 'mongoose';
 
 const mongoUri = process.env.DATABASE_URL || "mongodb://mongo:27017/app_data";

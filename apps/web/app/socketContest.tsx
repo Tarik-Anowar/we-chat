@@ -2,6 +2,7 @@
 import { useSession } from "next-auth/react";
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import io, { Socket } from 'socket.io-client';
+import { getAllChatIds } from "./actions/serverActions";
 
 const SocketContext = createContext<Socket | null>(null);
 
@@ -14,30 +15,36 @@ interface SocketProviderProps {
 }
 
 export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
+    const [allChatIds, setAllChatIds] = useState<string[]>([]);
     const { data: session, status } = useSession();
-
-    useEffect(() => {
-        if (status === 'loading') return;  
-
-        if (status !== 'authenticated') {
-            console.error('Unauthorized: User is not authenticated');
-            return;  
-        }
-    }, [status]);
-
-    const userId = session?.user?.id;
     const [socket, setSocket] = useState<Socket | null>(null);
 
     useEffect(() => {
-        if (status === 'authenticated' && userId) {
-            const newSocket = io('https://we-chat-5fk5.onrender.com', {  
+        const fetchChatIds = async () => {
+            if (status === 'authenticated') {
+                try {
+                    const getChatIds: string[] = await getAllChatIds();
+                    setAllChatIds(getChatIds);
+                } catch (error) {
+                    console.error('Error fetching chat IDs:', error);
+                }
+            }
+        };
+        fetchChatIds();
+    }, [status]);
+
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user?.id && allChatIds.length > 0) {
+            const userId = session.user.id;
+            const newSocket = io('http://localhost:8000', {
                 query: { userId },
                 transports: ['websocket'],
             });
 
             newSocket.on('connect', () => {
                 console.log('Connected to socket server');
-                newSocket.emit('register', userId);
+                console.log("chatIds: "+allChatIds)
+                newSocket.emit('register', { userId, allChatIds });
             });
 
             newSocket.on('disconnect', () => {
@@ -51,7 +58,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
                 console.log('Socket connection closed');
             };
         }
-    }, [status, userId]); 
+    }, [status, session?.user?.id, allChatIds]);
 
     return (
         <SocketContext.Provider value={socket}>

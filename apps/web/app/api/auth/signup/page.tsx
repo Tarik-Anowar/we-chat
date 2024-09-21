@@ -4,7 +4,7 @@ import { TextField, Button, Box, Typography, Snackbar, Alert } from '@mui/materi
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
 import signUpHandler from '../../../actions/sunbmitSignupData';
-import UploadImage from '../../../lib/uploadImage';
+import UploadImage from '../../../components/uploadImage';
 import styles from '../../../styles/signup.module.css'
 
 const SignUp = () => {
@@ -67,11 +67,6 @@ const SignUp = () => {
     }
   };
 
-  const handleImageUpload = (url: string) => {
-    console.log('Image uploaded with URL:', url); 
-    setImageUrl(url);
-  };
-
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
@@ -122,7 +117,7 @@ const SignUp = () => {
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
         />
-        <UploadImage uploadPreset="nextjs" cloudName="dmaxxegxu" onUpload={handleImageUpload} />
+        <UploadImage setUrl={setImageUrl}/>
         <Button type="submit" variant="contained" fullWidth sx={{ mt: 2 }}>
           Sign Up
         </Button>

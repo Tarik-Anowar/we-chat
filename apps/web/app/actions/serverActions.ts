@@ -6,6 +6,7 @@ import { Types } from 'mongoose';
 import User, { IUser } from "../model/userModel";
 import { NEXT_AUTH } from "../lib/auth";
 import Message from "../model/messaageModel";
+import ReadStatus from "../model/readStatusModel";
 
 enum ChatType { DIRECT = "DIRECT", GROUP = "GROUP" }
 
@@ -51,6 +52,7 @@ interface PChat {
     name: string;
     image?: string;
     lastMessage: Message;
+    unreadCount: number;
 }
 
 function getString(id: Types.ObjectId): string {
@@ -72,25 +74,69 @@ export const getAllChats = async (): Promise<PChat[]> => {
             .populate('lastMessage', '_id content sender createdAt')
             .exec();
 
-        return allChats.map((chat: any) => ({
-            _id: getString(chat._id as Types.ObjectId),
-            name: chat.type === 'DIRECT'
-                ? chat.participants.find((participant: any) => getString(participant._id as Types.ObjectId) !== session?.user.id)?.name
-                : chat.name,
-            image: chat.type === 'DIRECT'
-                ? chat.participants.find((participant: any) => getString(participant._id as Types.ObjectId) !== session?.user.id)?.image
-                : chat.image,
-            lastMessage: chat.lastMessage,
+        const readStatuses = await ReadStatus.find({ participantId: session.user.id }).exec();
+
+
+        return await Promise.all(allChats.map(async (chat: any) => {
+            const lastReadMessageStatus = readStatuses.find((status: any) =>
+                getString(status.chatId as Types.ObjectId) === getString(chat._id as Types.ObjectId)
+            );
+            let unreadCount = 0;
+
+            if (lastReadMessageStatus) {
+                chat.messages.forEach((message: any) => {
+                    if (
+                        getString(message._id as Types.ObjectId) >
+                        getString(lastReadMessageStatus.lastReadMessageId as Types.ObjectId)
+                    ) {
+                        unreadCount++;
+                    }
+                });
+            } else {
+                unreadCount = chat.messages.length;
+            }
+
+
+            return {
+                _id: getString(chat._id as Types.ObjectId),
+                name: chat.type === 'DIRECT'
+                    ? chat.participants.find((participant: any) => getString(participant._id as Types.ObjectId) !== session?.user.id)?.name
+                    : chat.name,
+                image: chat.type === 'DIRECT'
+                    ? chat.participants.find((participant: any) => getString(participant._id as Types.ObjectId) !== session?.user.id)?.image
+                    : chat.image,
+                lastMessage: chat.lastMessage,
+                unreadCount: unreadCount,
+            };
         }));
     } catch (error) {
-        console.error('Error fetching chats:', error);
         throw new Error('Failed to fetch chats');
     }
 };
 
+export const getAllChatIds = async (): Promise<string[]> => {
+    const session = await getServerSession(NEXT_AUTH); {
+        try {
+            if (!session?.user?.id) {
+                throw new Error('User is not authenticated');
+            }
+            await connectToDatabase();
+
+            const chats = await Chat.find({ participants: session.user.id }).select('_id').exec();
+            let allChatIds: string[] = [];
+            chats.forEach((chat) => { allChatIds.push(getString(chat._id as Types.ObjectId)) });
+            return allChatIds;
+        } catch (error) {
+            throw new Error('Failed to fetch chat ids');
+        }
+    }
+}
 
 export const getSingleChat = async (chatId: string): Promise<IChat> => {
     const session = await getServerSession(NEXT_AUTH);
+    if (!session || !session.user || !session.user.id) {
+        throw new Error('User not authenticated');
+    }
     try {
         await connectToDatabase();
         const chatObjId = new Types.ObjectId(chatId);
@@ -98,6 +144,10 @@ export const getSingleChat = async (chatId: string): Promise<IChat> => {
             .populate('participants', '_id name username image')
             .populate("messages", "_id content author createdAt updatedAt")
             .exec();
+
+        if (!chat) {
+            throw new Error('Chat not found');
+        }
 
         const participants: any = chat?.participants || [];
 
@@ -175,11 +225,9 @@ export const createGroup = async ({
         await connectToDatabase();
         const userId: string = session.user.id;
 
-        // Ensure admin is set correctly
         const admin: Types.ObjectId[] = [new Types.ObjectId(userId)];
         const participants = selectedIds.map((id: string) => new Types.ObjectId(id));
 
-        // Ensure groupName exists for 'GROUP' chats
         if (!groupName) {
             throw new Error('Group name is required');
         }
@@ -192,7 +240,6 @@ export const createGroup = async ({
             participants: [...admin, ...participants],
         });
 
-        // Save the group chat
         await newChat.save();
 
         return {
@@ -228,6 +275,16 @@ export const sendMessage = async ({ chatId, content }: { chatId: string, content
 
         const savedMessage = await newMessage.save();
 
+
+        // const lastMessage = savedMessage;
+        // if (lastMessage) {
+        //     await ReadStatus.updateOne(
+        //         { chatId: new Types.ObjectId(chatId as string), participantId: new Types.ObjectId(session?.user.id as string) },
+        //         { $set: { lastReadMessageId: lastMessage._id } },
+        //         { new: true }
+        //     );
+        // }
+
         await Chat.findByIdAndUpdate(
             chatId,
             {
@@ -251,5 +308,22 @@ export const sendMessage = async ({ chatId, content }: { chatId: string, content
     } catch (error) {
         console.error('Error sending Message:', error);
         throw new Error('Failed to send Message');
+    }
+}
+
+
+export const updateLastRead= async({chatId,messageId}:{chatId:string;messageId:string}) =>{
+    const session = await getServerSession(NEXT_AUTH);
+    try {
+        await connectToDatabase();
+        if (messageId) {
+            await ReadStatus.updateOne(
+                { chatId: new Types.ObjectId(chatId as string), participantId: new Types.ObjectId(session?.user?.id as string) },
+                { $set: { lastReadMessageId: messageId }},
+                { new: true }
+            );
+        }
+    } catch (error) {
+        throw new Error('Failed to update Message');
     }
 }

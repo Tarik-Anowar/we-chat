@@ -3,7 +3,7 @@ import { IconButton, TextField, Typography, styled } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UserAvatar from '../components/Avatar';
 import SendIcon from '@mui/icons-material/Send';
-import { getSingleChat, sendMessage } from '../actions/serverActions';
+import { getSingleChat, sendMessage, updateLastRead } from '../actions/serverActions';
 import { useSession } from 'next-auth/react';
 import { useSocket } from '../socketContest';
 
@@ -136,8 +136,9 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     const { data: session, status } = useSession();
     const [otherParticipant, setOtherParticipant] = useState<Participant | null>(null);
     const [message, setMessage] = useState('');
-    const [messageIds, setMessageIds] = useState<Set<string>>(new Set()); // Using Set to track message IDs
+    const [messageIds, setMessageIds] = useState<Set<string>>(new Set()); 
     const [singleChat, setSingleChat] = useState<IChat>();
+    const [lastMessageId, setLastMessageId] = useState<string | null>(null); 
     const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
 
     const socket = useSocket();
@@ -162,11 +163,12 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
 
         const handleMessageReceive = ({ chatId, message, sender }: { chatId: string; message: Message; sender: string }) => {
             if (singleChat && chatId === singleChat._id && socket.id !== sender) {
-                setMessageIds(prevIds => new Set(prevIds).add(message._id)); 
+                setMessageIds(prevIds => new Set(prevIds).add(message._id));
                 setSingleChat(prevChat => prevChat ? {
                     ...prevChat,
                     messages: [...(prevChat.messages || []), { ...message, sender }]
                 } : undefined);
+                setLastMessageId(message._id);
             }
         };
 
@@ -184,8 +186,19 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     }, [singleChat?.messages]);
 
     const handleBackClick = () => {
-        setSingleChatSelected('');
+        if (singleChat) {
+            socket?.emit('left-chat', singleChat._id);
+            
+            const messageId = lastMessageId || singleChat.messages?.[singleChat.messages.length - 1]?._id;
+            const chatId = singleChatSelected;
+            if (messageId) {
+                updateLastRead({chatId, messageId});
+            }
+    
+            setSingleChatSelected('');
+        }
     };
+    
 
     const handleSendMessage = async () => {
         if (message.trim()) {
@@ -196,13 +209,13 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             const chatId = singleChatSelected;
             try {
                 const newMessage: Message = await sendMessage({ chatId, content });
-                
+                setLastMessageId(newMessage._id);
                 setSingleChat(prevChat => prevChat ? {
                     ...prevChat,
                     messages: [...(prevChat.messages || []), newMessage]
                 } : undefined);
 
-                setMessageIds(prevIds => new Set(prevIds).add(newMessage._id)); 
+                setMessageIds(prevIds => new Set(prevIds).add(newMessage._id));
 
                 socket?.emit('send-message', { chatId, message: newMessage });
 
@@ -243,7 +256,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                                     {message.content.value}
                                 </div>
                                 <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#888', marginTop: '5px' }}>
-                                    {new Date(message.createdAt).toLocaleString()} 
+                                    {new Date(message.createdAt).toLocaleString()}
                                 </div>
                             </MessageBubble>
                         </MessageContainer>

@@ -9,11 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.651.1",
+    "@aws-sdk/s3-request-presigner": "^3.651.1",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
     "@repo/ui": "*",
+    "@smithy/util-retry": "^3.0.6",
     "@types/multer": "^1.4.12",
     "axios": "^1.7.5",
     "bcryptjs": "^2.4.3",
