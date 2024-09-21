@@ -36,7 +36,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     useEffect(() => {
         if (status === 'authenticated' && session?.user?.id && allChatIds.length > 0) {
             const userId = session.user.id;
-            const newSocket = io('http://localhost:8000', {
+            const newSocket = io('https://we-chat-web-zeta.vercel.app', {
                 query: { userId },
                 transports: ['websocket'],
             });
