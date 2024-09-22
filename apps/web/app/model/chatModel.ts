@@ -30,7 +30,6 @@ const ChatSchema: Schema = new Schema({
         type: String, 
         validate: {
             validator: function (this: IChat, value: string) {
-                // Validate that group chats must have a name
                 return this.type === 'GROUP' ? Boolean(value) : true;
             },
             message: 'Chat name is required for group chats',

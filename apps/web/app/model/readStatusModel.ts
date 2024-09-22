@@ -3,7 +3,7 @@ import mongoose, { Document, Schema, Types, Model } from 'mongoose';
 export interface IReadStatus extends Document {
     chatId: Types.ObjectId;
     participantId: Types.ObjectId;
-    lastReadMessageId: Types.ObjectId;
+    lastReadMessageId?: Types.ObjectId |null;
 }
 
 const ReadStatusSchema: Schema<IReadStatus> = new Schema({
@@ -20,7 +20,7 @@ const ReadStatusSchema: Schema<IReadStatus> = new Schema({
     lastReadMessageId: {
         type: Schema.Types.ObjectId,
         ref: 'Message',
-        required: true,
+        required: false,
     },
 }, { timestamps: true });
 

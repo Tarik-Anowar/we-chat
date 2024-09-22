@@ -4,6 +4,7 @@ import connectToDatabase from "../lib/db";
 import FriendRequest from "../model/friendRequestModel";
 import Chat from "../model/chatModel";
 import User from "../model/userModel";
+import ReadStatus from "../model/readStatusModel";
 
 interface Friends {
     _id: string;
@@ -166,6 +167,14 @@ export const acceptRequest = async ({ requestId }: { requestId: string }) => {
             { _id: receiver._id },
             { $addToSet: { friends: sender._id } }
         );
+
+        const readStatusEntries = newChat?.participants?.map(participantId => ({
+            chatId: newChat._id,
+            participantId: participantId,
+            lastReadMessageId: null, 
+        }));
+
+        await ReadStatus.create(readStatusEntries);
 
         return { success: true, message: 'Request accepted successfully' };
     } catch (error:any) {

@@ -69,22 +69,27 @@ export const getAllChats = async (): Promise<PChat[]> => {
         }
         await connectToDatabase();
 
+        // Fetch all chats where the user is a participant
         const allChats = await Chat.find({ participants: session.user.id })
             .populate('participants', '_id name image')
             .populate('lastMessage', '_id content sender createdAt')
             .exec();
 
+        // Fetch all read statuses for the user
         const readStatuses = await ReadStatus.find({ participantId: session.user.id }).exec();
 
-
         return await Promise.all(allChats.map(async (chat: any) => {
+            // Find the user's last read status for this chat
             const lastReadMessageStatus = readStatuses.find((status: any) =>
                 getString(status.chatId as Types.ObjectId) === getString(chat._id as Types.ObjectId)
             );
+            
             let unreadCount = 0;
 
-            if (lastReadMessageStatus) {
+            // If the user has read some messages, calculate unread messages
+            if (lastReadMessageStatus && lastReadMessageStatus.lastReadMessageId) {
                 chat.messages.forEach((message: any) => {
+                    // Compare message IDs to find unread messages
                     if (
                         getString(message._id as Types.ObjectId) >
                         getString(lastReadMessageStatus.lastReadMessageId as Types.ObjectId)
@@ -93,10 +98,11 @@ export const getAllChats = async (): Promise<PChat[]> => {
                     }
                 });
             } else {
+                // If no lastReadMessageId, consider all messages unread
                 unreadCount = chat.messages.length;
             }
 
-
+            // Return the processed chat details
             return {
                 _id: getString(chat._id as Types.ObjectId),
                 name: chat.type === 'DIRECT'
@@ -110,9 +116,11 @@ export const getAllChats = async (): Promise<PChat[]> => {
             };
         }));
     } catch (error) {
+        console.error('Failed to fetch chats:', error);
         throw new Error('Failed to fetch chats');
     }
 };
+
 
 export const getAllChatIds = async (): Promise<string[]> => {
     const session = await getServerSession(NEXT_AUTH); {
@@ -242,6 +250,14 @@ export const createGroup = async ({
 
         await newChat.save();
 
+        const readStatusEntries = newChat?.participants?.map(participantId => ({
+            chatId: newChat._id,
+            participantId: participantId,
+            lastReadMessageId: null, 
+        }));
+
+        await ReadStatus.create(readStatusEntries);
+
         return {
             success: true,
             message: 'Group chat created successfully',
@@ -276,14 +292,14 @@ export const sendMessage = async ({ chatId, content }: { chatId: string, content
         const savedMessage = await newMessage.save();
 
 
-        // const lastMessage = savedMessage;
-        // if (lastMessage) {
-        //     await ReadStatus.updateOne(
-        //         { chatId: new Types.ObjectId(chatId as string), participantId: new Types.ObjectId(session?.user.id as string) },
-        //         { $set: { lastReadMessageId: lastMessage._id } },
-        //         { new: true }
-        //     );
-        // }
+        const lastMessage = savedMessage;
+        if (lastMessage) {
+            await ReadStatus.updateOne(
+                { chatId: new Types.ObjectId(chatId as string), participantId: new Types.ObjectId(session?.user.id as string) },
+                { $set: { lastReadMessageId: lastMessage._id } },
+                { new: true }
+            );
+        }
 
         await Chat.findByIdAndUpdate(
             chatId,
@@ -311,19 +327,36 @@ export const sendMessage = async ({ chatId, content }: { chatId: string, content
     }
 }
 
-
-export const updateLastRead= async({chatId,messageId}:{chatId:string;messageId:string}) =>{
+export const updateLastRead = async ({
+    chatId,
+    messageId,
+}: {
+    chatId: string;
+    messageId: string;
+}) => {
     const session = await getServerSession(NEXT_AUTH);
+    if (!session?.user?.id) {
+        throw new Error('User is not authenticated');
+    }
+
     try {
         await connectToDatabase();
         if (messageId) {
-            await ReadStatus.updateOne(
-                { chatId: new Types.ObjectId(chatId as string), participantId: new Types.ObjectId(session?.user?.id as string) },
-                { $set: { lastReadMessageId: messageId }},
+            const result = await ReadStatus.updateOne(
+                {
+                    chatId: new Types.ObjectId(chatId as string),
+                    participantId: new Types.ObjectId(session.user.id as string),
+                },
+                { $set: { lastReadMessageId: new Types.ObjectId(messageId as string) } },
                 { new: true }
             );
+
+            if (result.modifiedCount === 0) {
+                throw new Error('No document found or updated');
+            }
         }
-    } catch (error) {
-        throw new Error('Failed to update Message');
+    } catch (error:any) {
+        console.error(error); 
+        throw new Error('Failed to update message: ' + error.message);
     }
-}
+};

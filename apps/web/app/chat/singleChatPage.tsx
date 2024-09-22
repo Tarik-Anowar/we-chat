@@ -76,7 +76,6 @@ const MessageBubble = styled('div')<{ isAuthor: boolean }>(({ isAuthor }) => ({
     textAlign: isAuthor ? 'right' : 'left'
 }));
 
-
 const LeftSide = styled('div')({
     display: 'flex',
     alignItems: 'center',
@@ -168,7 +167,8 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                     ...prevChat,
                     messages: [...(prevChat.messages || []), { ...message, sender }]
                 } : undefined);
-                setLastMessageId(message._id);
+                const messageId = message._id;
+                updateLastRead({chatId,messageId});
             }
         };
 
@@ -189,11 +189,11 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
         if (singleChat) {
             socket?.emit('left-chat', singleChat._id);
             
-            const messageId = lastMessageId || singleChat.messages?.[singleChat.messages.length - 1]?._id;
-            const chatId = singleChatSelected;
-            if (messageId) {
-                updateLastRead({chatId, messageId});
-            }
+            // const messageId = lastMessageId || singleChat.messages?.[singleChat.messages.length - 1]?._id;
+            // const chatId = singleChatSelected;
+            // if (messageId) {
+            //     updateLastRead({chatId, messageId});
+            // }
     
             setSingleChatSelected('');
         }
@@ -209,7 +209,8 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             const chatId = singleChatSelected;
             try {
                 const newMessage: Message = await sendMessage({ chatId, content });
-                setLastMessageId(newMessage._id);
+                const messageId = newMessage._id;
+                updateLastRead({chatId,messageId});
                 setSingleChat(prevChat => prevChat ? {
                     ...prevChat,
                     messages: [...(prevChat.messages || []), newMessage]
@@ -260,23 +261,24 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                                 </div>
                             </MessageBubble>
                         </MessageContainer>
-                    ))}
+                    ))
+                }
                 <div ref={endOfMessagesRef} />
             </BodyContainer>
 
             <InputContainer>
                 <StyledTextField
-                    variant="outlined"
-                    placeholder="Type your message..."
+                    placeholder="Type a message..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter') {
+                            e.preventDefault();
                             handleSendMessage();
                         }
                     }}
                 />
-                <IconButton onClick={handleSendMessage} color="primary">
+                <IconButton onClick={handleSendMessage}>
                     <SendIcon />
                 </IconButton>
             </InputContainer>
