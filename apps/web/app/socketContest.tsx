@@ -22,6 +22,7 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     useEffect(() => {
         const fetchChatIds = async () => {
             if (status === 'authenticated') {
+              
                 try {
                     const getChatIds: string[] = await getAllChatIds();
                     setAllChatIds(getChatIds);
