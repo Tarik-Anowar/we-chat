@@ -34,9 +34,9 @@ jobs:
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
       with:
-        host: ${{secrets.SSH_HOST}}
-        username: ${{secrets.SSH_USERNAME}}
-        key: ${{secrets.SSH_KEY}}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           # Install Docker if not already installed
           if ! command -v docker &> /dev/null
@@ -52,4 +52,10 @@ jobs:
           sudo docker pull tarikanowarcr7/wechathub:latest
           sudo docker stop web-app || true
           sudo docker rm web-app || true
-          sudo docker run -d --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
+          sudo docker run -d \
+            -e DATABASE_URL=${{ secrets.DB_URL }} \
+            -e NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
+            -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+            -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+            -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+            --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
