@@ -70,7 +70,11 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
 
   const onChatClick = useCallback((chatId: string) => {
     setSingleChatSelected(chatId);
-    setUnreadMessages((prev) => ({ ...prev, [chatId]: 0 })); // Reset unread count on click
+
+    setUnreadMessages((prev) => ({
+      ...prev,
+      [chatId]: 0,
+    }));
   }, [setSingleChatSelected]);
 
   const fetchAllChats = useCallback(async () => {
@@ -80,7 +84,7 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
         setChats(fetchedChats);
 
         const initialUnreadMessages = fetchedChats.reduce((acc, chat) => {
-          acc[chat._id] = chat.unreadCount ?? 0;
+          acc[chat._id] = chat.unreadCount || 0;
           return acc;
         }, {} as Record<string, number>);
 
@@ -107,7 +111,7 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
         )
       );
 
-      if (sender !== socket.id) {
+      if (sender !== socket.id && chatId !== singleChatSelected) {
         setUnreadMessages((prev) => ({
           ...prev,
           [chatId]: (prev[chatId] || 0) + 1,
@@ -120,7 +124,7 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
     return () => {
       socket.off('message-notification', handleMessageNotification);
     };
-  }, [socket, session?.user?.id]);
+  }, [socket, singleChatSelected]);
 
   const truncateMessage = (message: string) => (
     message.length > 15 ? `${message.substring(0, 15)}...` : message
@@ -136,7 +140,7 @@ const AllChats: React.FC<AllChatsProps> = ({ singleChatSelected, setSingleChatSe
                 badgeContent={unreadMessages[chat._id] || 0}
                 color="secondary"
                 overlap="circular"
-                invisible={singleChatSelected === chat._id||unreadMessages[chat._id] === 0} 
+                invisible={singleChatSelected === chat._id || unreadMessages[chat._id] === 0}
               >
                 <UserAvatar userId={chat._id} name={chat.name} imageUrl={chat.image} size={40} />
               </Badge>

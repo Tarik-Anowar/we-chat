@@ -135,9 +135,9 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     const { data: session, status } = useSession();
     const [otherParticipant, setOtherParticipant] = useState<Participant | null>(null);
     const [message, setMessage] = useState('');
-    const [messageIds, setMessageIds] = useState<Set<string>>(new Set()); 
+    const [messageIds, setMessageIds] = useState<Set<string>>(new Set());
     const [singleChat, setSingleChat] = useState<IChat>();
-    const [lastMessageId, setLastMessageId] = useState<string | null>(null); 
+    const [lastMessageId, setLastMessageId] = useState<string | null>(null);
     const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
 
     const socket = useSocket();
@@ -148,18 +148,28 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                 const chatDetails: IChat = await getSingleChat(singleChatSelected);
                 setOtherParticipant(chatDetails?.participants?.find((participant: Participant) => participant._id !== session?.user.id) || null);
                 setSingleChat(chatDetails);
+    
+                // Only update last read if there are unread messages
+                if (chatDetails?.messages && chatDetails.messages.length > 0) {
+                    const lastMsgId = chatDetails.messages[chatDetails.messages.length - 1]?._id || "";
+                    if (lastMsgId && !messageIds.has(lastMsgId)) {
+                        setLastMessageId(lastMsgId);
+                        updateLastRead({ chatId: chatDetails._id, messageId: lastMsgId });
+                    }
+                }
             } catch (error) {
                 console.error('Failed to fetch chat details:', error);
             }
         };
+    
         if (singleChatSelected) {
             fetchChatDetails();
         }
-    }, [singleChatSelected]);
-
+    }, [singleChatSelected, messageIds]);
+    
     useEffect(() => {
         if (!socket) return;
-
+    
         const handleMessageReceive = ({ chatId, message, sender }: { chatId: string; message: Message; sender: string }) => {
             if (singleChat && chatId === singleChat._id && socket.id !== sender) {
                 setMessageIds(prevIds => new Set(prevIds).add(message._id));
@@ -167,38 +177,42 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                     ...prevChat,
                     messages: [...(prevChat.messages || []), { ...message, sender }]
                 } : undefined);
-                const messageId = message._id;
-                updateLastRead({chatId,messageId});
+    
+                // Update last read if the message is from another participant
+                if (session?.user.id !== sender) {
+                    updateLastRead({ chatId, messageId: message._id });
+                }
             }
         };
-
+    
         socket.on('received-message', handleMessageReceive);
-
+    
         return () => {
             socket.off('received-message', handleMessageReceive);
         };
-    }, [socket, singleChat, session?.user.id, messageIds]);
+    }, [socket, singleChat, session?.user.id]);
 
     useEffect(() => {
         if (endOfMessagesRef.current) {
             endOfMessagesRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [singleChat?.messages]);
-
+    
+    // On chat exit, update the last read message
     const handleBackClick = () => {
         if (singleChat) {
             socket?.emit('left-chat', singleChat._id);
-            
-            // const messageId = lastMessageId || singleChat.messages?.[singleChat.messages.length - 1]?._id;
-            // const chatId = singleChatSelected;
-            // if (messageId) {
-            //     updateLastRead({chatId, messageId});
-            // }
+            const messageId = singleChat.messages?.[singleChat.messages.length - 1]?._id;
+            const chatId = singleChatSelected;
+            if (messageId) {
+                updateLastRead({ chatId, messageId });
+            }
     
             setSingleChatSelected('');
         }
     };
     
+
 
     const handleSendMessage = async () => {
         if (message.trim()) {
@@ -210,7 +224,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             try {
                 const newMessage: Message = await sendMessage({ chatId, content });
                 const messageId = newMessage._id;
-                updateLastRead({chatId,messageId});
+                // updateLastRead({ chatId, messageId });
                 setSingleChat(prevChat => prevChat ? {
                     ...prevChat,
                     messages: [...(prevChat.messages || []), newMessage]
