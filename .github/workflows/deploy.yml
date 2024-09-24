@@ -36,7 +36,7 @@ jobs:
       run: docker pull tarikanowarcr7/wechathub:latest
 
     - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.0
+      uses: appleboy/ssh-action@master
       with:
         host: ${{secrets.SSH_HOST}}
         username: ${{secrets.SSH_USERNAME}}
@@ -45,7 +45,7 @@ jobs:
           sudo docker pull tarikanowarcr7/wechathub:latest
           sudo docker stop web-app || true
           sudo docker rm web-app || true
-          sudo docker run -d --name web-app -p 3005:3000 tarikanowarcr7/wechathub:latest
+          sudo docker run -d --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
 
 
           
