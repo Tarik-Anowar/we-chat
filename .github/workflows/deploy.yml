@@ -42,10 +42,10 @@ jobs:
         username: ${{secrets.SSH_USERNAME}}
         key: ${{secrets.SSH_KEY}}
         script: |
-          sudo docker pull tarikanowarcr7/wechathub
-          sudo docker stop wechathub || true
-          sudo docker rm wechathub || true
-          sudo docker run -d --name web-app -p 3005:3000 tarikanowarcr7/wechathub
+          sudo docker pull tarikanowarcr7/wechathub:latest
+          sudo docker stop web-app || true
+          sudo docker rm web-app || true
+          sudo docker run -d --name web-app -p 3005:3000 tarikanowarcr7/wechathub:latest
 
 
           
