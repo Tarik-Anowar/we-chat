@@ -58,4 +58,5 @@ jobs:
             -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
             -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+            -e PROJECT_ENVIRONMENT=${{ secrets.PROJECT_ENVIRONMENT }} \
             --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
