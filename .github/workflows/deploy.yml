@@ -14,34 +14,49 @@ jobs:
     - name: Check Out Repo
       uses: actions/checkout@v2
 
-    - name: Debugging Secrets
-      run: echo ${{ secrets.DOCKER_USERNAME }} && echo ${{ secrets.DOCKER_PASSWORD }} 
-
-    - name: Log in to Docker Hub with CREDENTIALS
+    # Log in to Docker Hub using credentials stored in GitHub Secrets
+    - name: Log in to Docker Hub
       uses: docker/login-action@v2.1.0
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    # Build and push Docker image to Docker Hub
     - name: Build and Push Docker image
-      uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+      uses: docker/build-push-action@v3
       with:
         context: .
         file: ./docker/Dockerfile.web
         push: true
-        tags: tarikanowarcr7/wechathub
+        tags: tarikanowarcr7/wechathub:latest
 
-    - name: Verify Pushed Image
-      run: docker pull tarikanowarcr7/wechathub
-
+    # Deploy to EC2 server using SSH
     - name: Deploy to EC2
       uses: appleboy/ssh-action@master
       with:
-          host: ${{secrets.SSH_HOST}}
-          username: ${{secrets.SSH_USERNAME}}
-          key: ${{secrets.SSH_KEY}}
-          script: |
-            sudo docker pull tarikanowarcr7/wechathub:latest
-            sudo docker stop wechathub || true
-            sudo docker rm wechathub ||true
-            sudo docker run -d --name web-app -p 3005:3000 tarikanowarcr7/wechathub:latest
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          # Install Docker if not already installed
+          if ! command -v docker &> /dev/null
+          then
+            sudo apt-get update
+            sudo apt-get install -y docker.io
+            sudo systemctl start docker
+            sudo systemctl enable docker
+            sudo usermod -aG docker $USER
+          fi
+          
+          # Pull the latest Docker image and run the web app
+          sudo docker pull tarikanowarcr7/wechathub:latest
+          sudo docker stop web-app || true
+          sudo docker rm web-app || true
+          sudo docker run -d \
+            -e DATABASE_URL=${{ secrets.DB_URL }} \
+            -e NEXTAUTH_URL=${{ secrets.NEXTAUTH_URL }} \
+            -e NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }} \
+            -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
+            -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
+            -e PROJECT_ENVIRONMENT=${{ secrets.PROJECT_ENVIRONMENT }} \
+            --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
