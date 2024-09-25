@@ -62,7 +62,7 @@ const MessageContainer = styled('div')<{ isAuthor: boolean }>(({ isAuthor }) => 
     flexDirection: isAuthor ? 'row-reverse' : 'row',
     alignItems: 'flex-start',
     marginBottom: '10px',
-    justifyContent: isAuthor ? 'flex-end' : 'flex-start'
+    justifyContent: isAuthor ? 'flex-end' : 'flex-start',
 }));
 
 const MessageBubble = styled('div')<{ isAuthor: boolean }>(({ isAuthor }) => ({
@@ -73,7 +73,7 @@ const MessageBubble = styled('div')<{ isAuthor: boolean }>(({ isAuthor }) => ({
     wordBreak: 'break-word',
     marginLeft: isAuthor ? 'auto' : '0',
     marginRight: isAuthor ? '0' : 'auto',
-    textAlign: isAuthor ? 'right' : 'left'
+    textAlign: isAuthor ? 'right' : 'left',
 }));
 
 const LeftSide = styled('div')({
@@ -148,7 +148,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                 const chatDetails: IChat = await getSingleChat(singleChatSelected);
                 setOtherParticipant(chatDetails?.participants?.find((participant: Participant) => participant._id !== session?.user.id) || null);
                 setSingleChat(chatDetails);
-    
+
                 // Only update last read if there are unread messages
                 if (chatDetails?.messages && chatDetails.messages.length > 0) {
                     const lastMsgId = chatDetails.messages[chatDetails.messages.length - 1]?._id || "";
@@ -161,15 +161,15 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                 console.error('Failed to fetch chat details:', error);
             }
         };
-    
+
         if (singleChatSelected) {
             fetchChatDetails();
         }
     }, [singleChatSelected, messageIds]);
-    
+
     useEffect(() => {
         if (!socket) return;
-    
+
         const handleMessageReceive = ({ chatId, message, sender }: { chatId: string; message: Message; sender: string }) => {
             if (singleChat && chatId === singleChat._id && socket.id !== sender) {
                 setMessageIds(prevIds => new Set(prevIds).add(message._id));
@@ -177,16 +177,16 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
                     ...prevChat,
                     messages: [...(prevChat.messages || []), { ...message, sender }]
                 } : undefined);
-    
+
                 // Update last read if the message is from another participant
                 if (session?.user.id !== sender) {
                     updateLastRead({ chatId, messageId: message._id });
                 }
             }
         };
-    
+
         socket.on('received-message', handleMessageReceive);
-    
+
         return () => {
             socket.off('received-message', handleMessageReceive);
         };
@@ -197,7 +197,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             endOfMessagesRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [singleChat?.messages]);
-    
+
     // On chat exit, update the last read message
     const handleBackClick = () => {
         if (singleChat) {
@@ -207,11 +207,11 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             if (messageId) {
                 updateLastRead({ chatId, messageId });
             }
-    
+
             setSingleChatSelected('');
         }
     };
-    
+
 
 
     const handleSendMessage = async () => {
@@ -241,6 +241,14 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
         }
     };
 
+    const truncateName = (name: string) => {
+        const firstName = name.split(' ')[0]; 
+        if(!firstName) return "";
+        return firstName.length > 10 ? `${firstName.substring(0, 10)}...` : firstName;
+    };
+    
+
+
     return (
         <Container>
             <HeaderContainer>
@@ -252,33 +260,47 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
 
                 <RightSide>
                     {otherParticipant && (
-                        <>
-                            <UserAvatar userId={singleChatSelected} name={otherParticipant.name} imageUrl={otherParticipant.image || ''} size={30} />
-                            <Typography variant="h6" style={{ marginLeft: '10px' }}>
-                                {otherParticipant.name}
-                            </Typography>
-                        </>
+                        <div>{singleChat && singleChat.type !== "GROUP" &&
+                            <span style={{ display: 'flex', alignItems: 'center' }}>
+                                 <Typography variant="h6" style={{ marginLeft: '10px' }}>
+                                    {otherParticipant.name}
+                                </Typography>
+                                <UserAvatar userId={singleChatSelected} name={otherParticipant.name} imageUrl={otherParticipant.image || ''} size={30} />
+                            </span>
+                        }
+                        </div>
                     )}
                 </RightSide>
             </HeaderContainer>
 
             <BodyContainer>
                 {singleChat && singleChat.messages && singleChat.messages.length > 0 &&
-                    singleChat.messages.map((message: Message) => (
-                        <MessageContainer key={message._id} isAuthor={message.author === session?.user?.id}>
-                            <MessageBubble isAuthor={message.author === session?.user?.id}>
-                                <div>
-                                    {message.content.value}
-                                </div>
-                                <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#888', marginTop: '5px' }}>
-                                    {new Date(message.createdAt).toLocaleString()}
-                                </div>
-                            </MessageBubble>
-                        </MessageContainer>
-                    ))
+                    singleChat.messages.map((message: Message) => {
+                        const isAuthor = message.author === session?.user?.id;
+                        const sender = singleChat.participants?.find(p => String(p._id) === String(message.author));
+                        return (
+                            <MessageContainer key={message._id} isAuthor={isAuthor}>
+                                {singleChat.type === "GROUP" && !isAuthor && sender && (
+                                    <div style={{ marginRight: '10px' }}>
+                                        <UserAvatar userId={sender._id} name={sender.name} imageUrl={sender.image || ''} size={30} />
+                                        <Typography variant="caption" style={{ textAlign: 'center', display: 'block' }}>
+                                            {truncateName(sender.name)}
+                                        </Typography>
+                                    </div>
+                                )}
+                                <MessageBubble isAuthor={isAuthor}>
+                                    <div>{message.content.value}</div>
+                                    <div style={{ textAlign: 'right', fontSize: '0.8rem', color: '#888', marginTop: '5px' }}>
+                                        {new Date(message.createdAt).toLocaleString()}
+                                    </div>
+                                </MessageBubble>
+                            </MessageContainer>
+                        );
+                    })
                 }
                 <div ref={endOfMessagesRef} />
             </BodyContainer>
+
 
             <InputContainer>
                 <StyledTextField

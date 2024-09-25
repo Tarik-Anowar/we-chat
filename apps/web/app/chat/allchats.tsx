@@ -49,7 +49,7 @@ const SingleChat = styled('div')<SingleChatProps>(({ selected }) => ({
   alignItems: 'center',
   padding: '10px',
   cursor: 'pointer',
-  backgroundColor: selected ? 'rgb(173, 216, 230)' : 'rgb(200, 255, 200)', // Bluish when selected
+  backgroundColor: selected ? 'rgb(173, 216, 230)' : 'rgb(200, 255, 200)', 
   borderRadius: '5px',
   marginBottom: '3px',
   '&:hover': {

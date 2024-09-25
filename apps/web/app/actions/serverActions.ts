@@ -139,12 +139,12 @@ export const getAllChatIds = async (): Promise<string[]> => {
         }
     }
 }
-
 export const getSingleChat = async (chatId: string): Promise<IChat> => {
     const session = await getServerSession(NEXT_AUTH);
     if (!session || !session.user || !session.user.id) {
         throw new Error('User not authenticated');
     }
+
     try {
         await connectToDatabase();
         const chatObjId = new Types.ObjectId(chatId);
@@ -157,8 +157,9 @@ export const getSingleChat = async (chatId: string): Promise<IChat> => {
             throw new Error('Chat not found');
         }
 
-        const participants: any = chat?.participants || [];
+        const participants: any[] = chat?.participants || [];
 
+        // Return the chat details including participants
         const singleChat: any = {
             _id: getString(chat?._id as Types.ObjectId),
             type: chat?.type,
@@ -169,16 +170,15 @@ export const getSingleChat = async (chatId: string): Promise<IChat> => {
                 ? participants.find((participant: Participant) => participant._id !== session?.user.id)?.image || ''
                 : chat?.image,
             messages: chat?.messages,
+            participants,  // Include participants in the return object
         };
+
         return singleChat;
     } catch (error) {
         console.error('Error loading chat:', error);
         throw new Error('Failed to load chat');
     }
 };
-
-
-
 
 interface SUser {
     _id: string;

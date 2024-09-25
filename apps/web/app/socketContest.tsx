@@ -44,8 +44,6 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
             });
 
             newSocket.on('connect', () => {
-                console.log('Connected to socket server');
-                console.log("chatIds: "+allChatIds)
                 newSocket.emit('register', { userId, allChatIds });
             });
 
