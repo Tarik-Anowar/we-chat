@@ -224,7 +224,6 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
             try {
                 const newMessage: Message = await sendMessage({ chatId, content });
                 const messageId = newMessage._id;
-                // updateLastRead({ chatId, messageId });
                 setSingleChat(prevChat => prevChat ? {
                     ...prevChat,
                     messages: [...(prevChat.messages || []), newMessage]
