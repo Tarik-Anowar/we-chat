@@ -159,7 +159,6 @@ export const getSingleChat = async (chatId: string): Promise<IChat> => {
 
         const participants: any[] = chat?.participants || [];
 
-        // Return the chat details including participants
         const singleChat: any = {
             _id: getString(chat?._id as Types.ObjectId),
             type: chat?.type,
@@ -170,7 +169,7 @@ export const getSingleChat = async (chatId: string): Promise<IChat> => {
                 ? participants.find((participant: Participant) => participant._id !== session?.user.id)?.image || ''
                 : chat?.image,
             messages: chat?.messages,
-            participants,  // Include participants in the return object
+            participants,  
         };
 
         return singleChat;
