@@ -266,7 +266,7 @@ export const createGroup = async ({
         console.error('Error creating group chat', error);
         return {
             success: false,
-            message: error?.message || 'Error creating group chat',
+            message: error?.message || 'Error creating Group Chat',
         };
     }
 };
