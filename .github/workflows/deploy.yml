@@ -28,7 +28,7 @@ jobs:
         context: .
         file: ./docker/Dockerfile.web
         push: true
-        tags: tarikanowarcr7/wechathub:latest
+        tags: tarikanowarcr7/wechathub:latest, tarikanowarcr7/wechathub:${{ github.sha }}
 
     # Deploy to EC2 server using SSH
     - name: Deploy to EC2
@@ -48,8 +48,11 @@ jobs:
             sudo usermod -aG docker $USER
           fi
           
+          # Remove unused Docker images
+          sudo docker system prune -f
+          
           # Pull the latest Docker image and run the web app
-          sudo docker pull tarikanowarcr7/wechathub:latest
+          sudo docker pull tarikanowarcr7/wechathub:${{ github.sha }}
           sudo docker stop web-app || true
           sudo docker rm web-app || true
           sudo docker run -d \
@@ -59,4 +62,7 @@ jobs:
             -e GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} \
             -e GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} \
             -e PROJECT_ENVIRONMENT=${{ secrets.PROJECT_ENVIRONMENT }} \
-            --name web-app -p 3000:3000 tarikanowarcr7/wechathub:latest
+            --name web-app -p 3000:3000 tarikanowarcr7/wechathub:${{ github.sha }}
+
+          # Check logs to confirm the container is running correctly
+          sudo docker logs web-app
