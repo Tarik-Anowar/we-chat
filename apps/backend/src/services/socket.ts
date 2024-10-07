@@ -10,6 +10,8 @@ const redisConnection = async () => {
     try {
         await pub.set('foo', 'bar');
         console.log('Redis connected successfully');
+        sub.subscribe('user_typing');
+        sub.subscribe('user_stopped_typing');
     } catch (error) {
         console.error('Redis connection error:', error);
     }
@@ -125,7 +127,32 @@ class SocketService {
                     }
                     delete this.currentChatId[socket.id];
                 }
-            })
+            });
+
+            socket.on("typing", ({ chatId, name }) => {
+                console.log("user typing...");
+                const channel = `user_typing`;
+                pub.publish(channel, JSON.stringify({ chatId, name, sender: socket.id }), (err, count) => {
+                    if (err) {
+                        console.error("Error publishing message:", err);
+                    } else {
+                        console.log(`Message published to ${count} subscribers on channel ${channel}`);
+                    }
+                });
+
+            });
+            socket.on("stopped_typing", ({ chatId, name }) => {
+                console.log("user stopped typing...");
+                const channel = `user_stopped_typing`;
+                pub.publish(channel, JSON.stringify({ chatId, name, sender: socket.id }), (err, count) => {
+                    if (err) {
+                        console.error("Error publishing message:", err);
+                    } else {
+                        console.log(`Message published to ${count} subscribers on channel ${channel}`);
+                    }
+                });
+
+            });
 
             socket.on('send-message', ({ chatId, message }) => {
                 console.log(`Publishing message to channel: chat-${chatId}, Message: ${message.content.value}`);
@@ -160,33 +187,86 @@ class SocketService {
             console.log(`Message received on Redis channel ${channel}`);
             try {
                 const parsedMessage = JSON.parse(message);
-                console.log(`Parsed message: ${parsedMessage.message.content.value}, from sender: ${parsedMessage.sender}`);
+                if (channel === 'user_typing') {
+                    const chatId = parsedMessage.chatId;
+                    if (!this.chatRooms[chatId]) {
+                        console.log(`No sockets found for chatId: ${chatId}`);
+                        return;
+                    }
+                    for (const socketId of this.chatRooms[chatId]) {
+                        if (socketId !== parsedMessage.sender && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('user_typing', {
+                                chatId: parsedMessage.chatId,
+                                name: parsedMessage.name,
+                                sender: parsedMessage.sender
+                            });
+                            console.log(`Typing Message sent to socket: ${socketId}, chatId: ${chatId}`);
+                        }
+                    }
 
-                const chatId = channel.split('-')[1];
-                if (!this.chatRooms[chatId]) {
-                    console.log(`No sockets found for chatId: ${chatId}`);
-                    return;
-                }
-
-                for (const socketId of this.chatRooms[chatId]) {
-                    if (socketId !== parsedMessage.sender && this.onlineSokets.has(socketId)) {
-                        this._io.to(socketId).emit('received-message', {
-                            chatId: chatId,
-                            message: parsedMessage.message as Message,
-                            sender: parsedMessage.sender
-                        });
-                        console.log(`Message sent to socket: ${socketId}, chatId: ${chatId}`);
+                    for (const socketId of this.chatSockets[chatId]) {
+                        console.log(`Typing Notification sent to socket: ${socketId}, chatId: ${chatId}`);
+                        if (!this.chatRooms[socketId] && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('user_typing', {
+                                chatId: parsedMessage.chatId,
+                                name: parsedMessage.name,
+                                sender: parsedMessage.sender
+                            });
+                        }
                     }
                 }
+                else if (channel === 'user_stopped_typing') {
+                    const chatId = parsedMessage.chatId;
+                    if (!this.chatRooms[chatId]) {
+                        console.log(`No sockets found for chatId: ${chatId}`);
+                        return;
+                    }
+                    for (const socketId of this.chatRooms[chatId]) {
+                        if (socketId !== parsedMessage.sender && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('user_stopped_typing', {
+                                chatId: parsedMessage.chatId,
+                                sender: parsedMessage.sender
+                            });
+                            console.log(`Message sent to socket: ${socketId}, chatId: ${chatId}`);
+                        }
+                    }
 
-                for (const socketId of this.chatSockets[chatId]) {
-                    console.log(`Notification sent to socket: ${socketId}, chatId: ${chatId}`);
-                    if (!this.chatRooms[socketId] && this.onlineSokets.has(socketId)) {
-                        this._io.to(socketId).emit('message-notification', {
-                            chatId: chatId,
-                            message: parsedMessage.message as Message,
-                            sender: parsedMessage.sender
-                        });
+                    for (const socketId of this.chatSockets[chatId]) {
+                        console.log(`Notification sent to socket: ${socketId}, chatId: ${chatId}`);
+                        if (!this.chatRooms[socketId] && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('user_stopped_typing', {
+                                chatId: parsedMessage.chatId,
+                                sender: parsedMessage.sender
+                            });
+                        }
+                    }
+                }
+                else {
+                    const chatId = channel.split('-')[1];
+                    if (!this.chatRooms[chatId]) {
+                        console.log(`No sockets found for chatId: ${chatId}`);
+                        return;
+                    }
+                    for (const socketId of this.chatRooms[chatId]) {
+                        if (socketId !== parsedMessage.sender && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('received-message', {
+                                chatId: chatId,
+                                message: parsedMessage.message as Message,
+                                sender: parsedMessage.sender
+                            });
+                            console.log(`Message sent to socket: ${socketId}, chatId: ${chatId}`);
+                        }
+                    }
+
+                    for (const socketId of this.chatSockets[chatId]) {
+                        console.log(`Notification sent to socket: ${socketId}, chatId: ${chatId}`);
+                        if (!this.chatRooms[socketId] && this.onlineSokets.has(socketId)) {
+                            this._io.to(socketId).emit('message-notification', {
+                                chatId: chatId,
+                                message: parsedMessage.message as Message,
+                                sender: parsedMessage.sender
+                            });
+                        }
                     }
                 }
 

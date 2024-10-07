@@ -37,7 +37,8 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     useEffect(() => {
         if (status === 'authenticated' && session?.user?.id && allChatIds.length > 0) {
             const userId = session.user.id;
-            const url = process.env.PROJECT_ENVIRONMENT==='DEVELOPMENT'?"http://localhost:8000":'https://we-chat-5fk5.onrender.com'
+            // const url = process.env.PROJECT_ENVIRONMENT==='DEVELOPMENT'?"http://localhost:8000":'https://we-chat-5fk5.onrender.com'
+            const url = "http://localhost:8000";
             const newSocket = io(url, {
                 query: { userId },
                 transports: ['websocket'],

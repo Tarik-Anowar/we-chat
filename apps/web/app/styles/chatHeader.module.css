@@ -3,50 +3,57 @@
     max-width: 550px;
     align-items: center;
     justify-content: space-between;
-    padding: 5px; /* Reduced padding */
+    padding: 5px;
     background-color: #f5f5f5;
     border-bottom: 1px solid #ddd;
     border-radius: 20px;
     margin: 5px;
     margin-left: 0px;
-    max-height: 40px; /* Reduced max-height */
-    padding-left: 15px; /* Adjusted padding */
-    padding-right: 15px; /* Adjusted padding */
+    max-height: 40px;
+    padding-left: 15px;
+    padding-right: 15px;
+    position: relative; /* Ensure the dropdown appears relative to this container */
 }
 
 .searchBoxInput {
     flex-grow: 1;
-    padding: 6px; /* Reduced padding */
+    padding: 6px;
     border-radius: 4px;
     border: 1px solid #ccc;
     margin-right: 10px;
 }
 
 .icon {
-    font-size: 20px; 
-    color: #555;    
-    transition: color 0.3s ease; 
+    font-size: 20px;
+    color: #555;
+    transition: color 0.3s ease;
 }
 
 .icon:hover {
-    color: #007bff; 
+    color: #007bff;
     cursor: pointer;
 }
 
 .option {
     display: flex;
     align-items: center;
-    padding: 6px; 
-    width: 100%; 
-    background: #bfbfbf;
-    box-shadow: 0px 2px 2px;
+    padding: 10px; 
+    background-color: white; 
+    border-radius: 0 0 10px 10px; 
+    width: 100%;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); 
+    z-index: 10; 
+    position: absolute;
+    top: 100%; 
+    left: 0;
+    border: 1px solid #ddd;
 }
 
 .userInfo {
     display: flex;
     flex-direction: column;
     margin-left: 8px;
-    flex-grow: 1; 
+    flex-grow: 1;
 }
 
 .username {
@@ -55,11 +62,11 @@
 }
 
 .name {
-    font-size: 14px; 
+    font-size: 14px;
 }
 
 .addButton {
-    margin-left: auto; 
+    margin-left: auto;
     color: #007bff;
 }
 
