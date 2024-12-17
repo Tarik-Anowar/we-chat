@@ -1,6 +1,6 @@
 name: Build and Deploy to Docker Hub
 
-on:
+on: 
   push:
     branches:
       - main
@@ -28,13 +28,12 @@ jobs:
         push: true
         tags: tarikanowarcr7/wechathub:latest, tarikanowarcr7/wechathub:${{ github.sha }}
 
-    - name: SSH to EC2
+    - name: Deploy to EC2
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        port: 22
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
         script: |
           # Install Docker if not already installed
           if ! command -v docker &> /dev/null
