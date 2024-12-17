@@ -1,0 +1,45 @@
+*.pyc
+*.pyo
+__pycache__/
+
+venv/
+env/
+apps/
+dataset/
+instance/
+gpt2-model/
+logs/
+train_model.ipynb/
+.ipynb_checkpoints/
+
+
+# Flask-related configuration files
+*.cfg
+*.ini
+
+# Log files
+*.log
+
+# Database files (if using SQLite, for example)
+*.db
+*.sqlite3
+
+# IDE/editor directories
+.vscode/
+.idea/
+
+# MacOS-specific
+.DS_Store
+
+# Windows-specific
+Thumbs.db
+
+# Distribution / packaging
+*.egg
+*.egg-info
+dist/
+build/
+*.tar.gz
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/

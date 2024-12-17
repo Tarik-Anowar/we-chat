@@ -7,8 +7,9 @@ import { getSingleChat, sendMessage, updateLastRead } from '../actions/serverAct
 import { useSession } from 'next-auth/react';
 import { useSocket } from '../socketContest';
 import EmojiEmotionsIcon from '@mui/icons-material/EmojiEmotions';
-import data from '@emoji-mart/data'
-import Picker from '@emoji-mart/react'
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+import axios from 'axios';
 
 interface Participant {
   _id: string;
@@ -114,6 +115,24 @@ const StyledTextField = styled(TextField)({
   },
 });
 
+const SuggestionsContainer = styled('div')({
+  backgroundColor: '#e0f7fa',
+  border: '1px solid #ccc',
+  borderRadius: '10px',
+  padding: '5px',
+  marginTop: '5px',
+  maxHeight: '150px',
+  overflowY: 'auto',
+});
+
+const SuggestionItem = styled(Typography)({
+  padding: '5px',
+  cursor: 'pointer',
+  '&:hover': {
+    backgroundColor: '#b2ebf2',
+  }
+});
+
 enum MessageType {
   TEXT = "TEXT",
   IMAGE = "IMAGE",
@@ -150,6 +169,8 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
   const [typingUser, setTypingUser] = useState<TypingUser | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const socket = useSocket();
+  const [suggestedTexts, setSuggestedTexts] = useState<string | null>(null);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -199,7 +220,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     const handleUserTyping = ({ chatId, name, sender }: { chatId: string; name: string; sender: string }) => {
       if (chatId === singleChat?._id) {
         console.log("typing");
-        setTypingUser({ sender:sender, name:name });
+        setTypingUser({ sender: sender, name: name });
       };
     }
 
@@ -238,6 +259,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
       }
       setIsEmojiPickerOpen(false);
       setSingleChatSelected('');
+      setSuggestedTexts(null);
     }
   };
 
@@ -249,9 +271,33 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     setIsEmojiPickerOpen(prev => !prev);
   };
 
+  const fetchSuggestedTexts = async (query: string) => {
+    try {
+      if(query===""){
+        setSuggestedTexts(null);
+      }
+      console.log("prompt = " + query);
+      const response = await axios.post('http://localhost:5000/api/next_word', { prompt: query, num_words: 5, });
+      console.log("generated text = " + response.data);
+       setSuggestedTexts(response.data);
+      return response.data;
+    }
+    catch (error) {
+      console.error('Error generating text:', error);
+      throw error;
+    }
+  };
+
+
+
+  const handleSelectSuggestion = (text: string) => {
+    setMessage(text);
+    setSuggestedTexts(null);
+  };
+
   const renderTypingUsers = () => {
     if (!typingUser) return null;
-    if(typingUser.sender===socket?.id) return;
+    if (typingUser.sender === socket?.id) return;
     return (
 
       <Typography variant="body2" style={{ marginLeft: '10px', fontStyle: 'italic' }}>
@@ -261,8 +307,8 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
 
   };
 
-  const handleTyping = () => {
-    if (!socket || !singleChat || !session?.user?.name) return; 
+  const handleTyping = (query:string) => {
+    if (!socket || !singleChat || !session?.user?.name) return;
 
     if (!isTyping) {
       setIsTyping(true);
@@ -274,12 +320,14 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
     }
 
     const newTimeout = setTimeout(() => {
+      fetchSuggestedTexts(query);
       socket.emit('stopped_typing', { chatId: singleChat._id });
       setIsTyping(false);
     }, 1000);
 
     setTypingTimeout(newTimeout);
   };
+
 
 
 
@@ -305,10 +353,12 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
 
         setMessage('');
         setIsEmojiPickerOpen(false);
+        setSuggestedTexts(null);
       } catch (error) {
         console.error('Failed to send message:', error);
       }
     }
+
   };
 
   const truncateName = (name: string) => {
@@ -372,33 +422,44 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
         <div ref={endOfMessagesRef} />
       </BodyContainer>
 
+      {suggestedTexts && (
+        <SuggestionsContainer>
+          <SuggestionItem onClick={() => handleSelectSuggestion(suggestedTexts)}>
+            {suggestedTexts}
+          </SuggestionItem>
+        </SuggestionsContainer>
+      )}
+
 
       <InputContainer>
         <IconButton onClick={toggleEmojiPicker}>
           <EmojiEmotionsIcon />
         </IconButton>
-
         {isEmojiPickerOpen && (
-          <div onSelect={handleEmojiClick} style={{ position: 'absolute', bottom: '60px', zIndex: 1000 }}>
+          <div style={{ position: 'absolute', bottom: '60px', zIndex: 20 }}>
             <Picker data={data} onEmojiSelect={handleEmojiClick} />
           </div>
         )}
-
         <StyledTextField
-          placeholder="Type a message..."
           value={message}
-          onChange={(e) => { setMessage(e.target.value); handleTyping(); }}
-          onKeyDown={(e) => {
+          onChange={(e) => {
+            setMessage(e.target.value);
+            handleTyping(e.target.value);
+          }}
+          onKeyPress={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               handleSendMessage();
             }
           }}
+          placeholder="Type a message..."
         />
-        <IconButton onClick={handleSendMessage}>
+        <IconButton onClick={handleSendMessage} disabled={!message.trim()}>
           <SendIcon />
         </IconButton>
       </InputContainer>
+
+
     </Container>
   );
 };
