@@ -8,7 +8,7 @@ html {
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow-y: scroll; /* Ensures scrolling is always available */
+    overflow: hidden; /* Ensures scrolling is always available */
 }
 
 body {
@@ -21,8 +21,8 @@ body {
 
 /* Hide scrollbar but allow scrolling */
 *::-webkit-scrollbar {
-    width: 6px;  /* Small scrollbar width */
-    height: 6px;
+    width: 0px;  /* Small scrollbar width */
+    height: 0px;
 }
 
 *::-webkit-scrollbar-thumb {
@@ -35,6 +35,6 @@ body {
 }
 
 * {
-    scrollbar-width: thin; /* Allows a small scrollbar for accessibility */
+    scrollbar-width: 0px; /* Allows a small scrollbar for accessibility */
     -ms-overflow-style: none; /* Hides scrollbar on IE and Edge */
 }

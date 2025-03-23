@@ -210,7 +210,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
           messages: [...(prevChat.messages || []), { ...message, sender }]
         } : undefined);
 
-        // Update last read if the message is from another participant
+        
         if (session?.user.id !== sender) {
           updateLastRead({ chatId, messageId: message._id });
         }
@@ -452,7 +452,7 @@ const SingleChat: React.FC<ChatHeaderProps> = ({ singleChatSelected, setSingleCh
               handleSendMessage();
             }
           }}
-          placeholder="Type a message..."
+          placeholder="Type message..."
         />
         <IconButton onClick={handleSendMessage} disabled={!message.trim()}>
           <SendIcon />

@@ -3,13 +3,14 @@
   "private": true,
   "scripts": {
     "start": "turbo start",
-    "start-web-app":"cd ./apps/web && npm run start",
+    "start-web-app": "cd ./apps/web && npm run start",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "devDependencies": {
+    "@types/react-modal": "^3.16.3",
     "prettier": "^3.2.5",
     "turbo": "^2.1.1",
     "typescript": "^5.4.5"
